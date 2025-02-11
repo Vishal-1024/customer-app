@@ -6,5 +6,6 @@ router.post('/', customerController.createCustomer);
 router.get('/', customerController.getAllCustomers);
 router.get('/today-reminders', customerController.getTodaysReminders);
 router.get('/upcoming-reminders', customerController.getUpcomingReminders);
+router.get('/previous-reminders', customerController.getPreviousReminders);
 
 module.exports = router;

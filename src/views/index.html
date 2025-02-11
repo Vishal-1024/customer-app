@@ -29,6 +29,11 @@
   <h2>Customers</h2>
   <div id="customers"></div>
 
+  <div id="previousReminders">
+    <h2>Previous Reminders</h2>
+    <div id="previousList"></div>
+  </div>
+
   <script>
     // Add Customer
     document.getElementById('customerForm').addEventListener('submit', async (e) => {
@@ -80,11 +85,22 @@ async function loadUpcomingReminders() {
   `).join('');
 }
 
+async function loadPreviousReminders() {
+  const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
+  const reminders = await response.json();
+  const container = document.getElementById('previousList');
+  container.innerHTML = reminders.map(r => `
+    <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
+  `).join('');
+}
+
+
 
     // Load customers on page load
     loadCustomers();
     loadTodaysReminders();
     loadUpcomingReminders();
+    loadPreviousReminders();
   </script>
 </body>
 </html>
