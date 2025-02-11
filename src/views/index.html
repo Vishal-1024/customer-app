@@ -22,7 +22,7 @@
     <input type="date" name="expiration_date" required><br>
     <input type="text" name="product" placeholder="Product"><br>
     <input type="text" name="address" placeholder="Address" required><br>
-<input type="text" name="mobile_number" placeholder="Mobile Number" required><br>
+    <input type="text" name="mobile_number" placeholder="Mobile Number" required><br>
     <button type="submit">Add Customer</button>
   </form>
 
@@ -67,7 +67,7 @@ async function loadTodaysReminders() {
   const reminders = await response.json();
   const container = document.getElementById('todaysList');
   container.innerHTML = reminders.map(r => `
-    <p>${r.type} for ${r.name} (Expires: ${r.expiration_date})</p>
+    <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
   `).join('');
 }
 
@@ -76,7 +76,7 @@ async function loadUpcomingReminders() {
   const reminders = await response.json();
   const container = document.getElementById('upcomingList');
   container.innerHTML = reminders.map(r => `
-    <p>${r.type} for ${r.name} (Expires: ${r.expiration_date})</p>
+    <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
   `).join('');
 }
 
