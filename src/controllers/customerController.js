@@ -10,13 +10,19 @@ exports.createCustomer = async (req, res) => {
       return res.status(400).json({ error: 'Mobile number must be 10 digits' });
     }
 
+    // Calculate expiration_date as start_date + 1 year
+    const startDate = new Date(req.body.start_date);
+    const expirationDate = new Date(startDate);
+    expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+    const formattedExpirationDate = expirationDate.toISOString().split('T')[0];
+
     // Insert customer
     const result = await db.query(
       'INSERT INTO customers (name, start_date, expiration_date, product, address, mobile_number) VALUES (?, ?, ?, ?, ?, ?)',
       [
         req.body.name,
         req.body.start_date,
-        req.body.expiration_date,
+        formattedExpirationDate,  // Auto-calculated
         req.body.product,
         req.body.address,
         req.body.mobile_number
@@ -50,7 +56,7 @@ exports.createCustomer = async (req, res) => {
     };
 
     // Insert reminders
-    const reminders = generateReminders(customerId, req.body.start_date, req.body.expiration_date);
+    const reminders = generateReminders(customerId, req.body.start_date, formattedExpirationDate);
     for (const reminder of reminders) {
       await db.query(
         'INSERT INTO reminders (customer_id, type, reminder_date) VALUES (?, ?, ?)',
@@ -63,7 +69,6 @@ exports.createCustomer = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 exports.getAllCustomers = async (req, res) => {
   try {
     const customers = await db.query(`
@@ -168,3 +173,77 @@ exports.searchCustomers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getInactiveCustomers = async (req, res) => {
+  try {
+    const customers = await db.query(`
+      SELECT 
+        id, 
+        name, 
+        DATE_FORMAT(expiration_date, '%d/%m/%Y') AS expiration_date
+      FROM customers
+      WHERE expiration_date < CURDATE()
+    `);
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.renewSubscription = async (req, res) => {
+  try {
+    const customerId = req.params.id;
+    const newEndDate = new Date();
+    newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+
+    // Delete old reminders
+    await db.query('DELETE FROM reminders WHERE customer_id = ?', [customerId]);
+
+    // Generate new reminders
+    const generateReminders = (start_date, expiration_date) => {
+      const startDate = new Date(start_date);
+      const expirationDate = new Date(expiration_date);
+      let currentDate = new Date(startDate);
+      const reminders = [];
+
+      // Servicing reminders every 3 months
+      while (currentDate < expirationDate) {
+        reminders.push({
+          type: 'servicing',
+          reminder_date: currentDate.toISOString().split('T')[0]
+        });
+        currentDate.setMonth(currentDate.getMonth() + 3);
+      }
+
+      // Renewal reminder at expiration date
+      reminders.push({
+        type: 'expiration',
+        reminder_date: expirationDate.toISOString().split('T')[0]
+      });
+
+      return reminders;
+    };
+
+    // Insert new reminders
+    const newStartDate = new Date(); // Today
+    const reminders = generateReminders(newStartDate, newEndDate);
+    for (const reminder of reminders) {
+      await db.query(
+        'INSERT INTO reminders (customer_id, type, reminder_date) VALUES (?, ?, ?)',
+        [customerId, reminder.type, reminder.reminder_date]
+      );
+    }
+
+    // Update customer dates
+    await db.query(`
+      UPDATE customers
+      SET start_date = CURDATE(), expiration_date = ?
+      WHERE id = ?
+    `, [newEndDate.toISOString().split('T')[0], customerId]);
+
+    res.json({ message: 'Subscription renewed' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+

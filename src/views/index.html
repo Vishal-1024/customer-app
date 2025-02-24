@@ -19,7 +19,6 @@
   <form id="customerForm">
     <input type="text" name="name" placeholder="Name" required><br>
     <input type="date" name="start_date" required><br>
-    <input type="date" name="expiration_date" required><br>
     <input type="text" name="product" placeholder="Product"><br>
     <input type="text" name="address" placeholder="Address" required><br>
     <input type="text" name="mobile_number" placeholder="Mobile Number" required><br>
@@ -35,65 +34,31 @@
 
   <div id="searchResults"></div>
 
+  <div id="inactiveUsers">
+    <h2>Inactive Users</h2>
+    <div id="inactiveList"></div>
+  </div>
+
   <div id="previousReminders">
     <h2>Previous Reminders</h2>
     <div id="previousList"></div>
   </div>
   
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Add Customer Form
-      document.getElementById('customerForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-        const response = await fetch('http://localhost:3000/api/customers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (response.ok) {
-          alert('Customer added!');
-          e.target.reset();
-        } else {
-          alert('Error: ' + await response.text());
-        }
-      });
-    
-      // Search Form
-      document.getElementById('searchForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        performSearch();
-      });
-    
-      document.getElementById('searchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
-      });
-    
-      // Search Function
-      async function performSearch() {
-        const searchTerm = document.getElementById('searchInput').value.trim();
-        if (!searchTerm) return;
-    
-        try {
-          const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
-          const customers = await response.json();
-    
-          const container = document.getElementById('searchResults');
-          container.innerHTML = customers.map(c => `
-            <div class="customer">
-              <h3>${c.name}</h3>
-              <p>Phone: ${c.mobile_number}</p>
-              <p>Start Date: ${c.start_date}</p>
-              <p>End Date: ${c.expiration_date}</p>
-            </div>
-          `).join('');
-        } catch (error) {
-          console.error('Error:', error);
-        }
+    <script>
+      // Define all load functions globally (outside the listener)
+      async function loadInactiveUsers() {
+        const response = await fetch('http://localhost:3000/api/customers/inactive');
+        const customers = await response.json();
+        const container = document.getElementById('inactiveList');
+        container.innerHTML = customers.map(c => `
+          <div class="customer">
+            <h3>${c.name}</h3>
+            <p>End Date: ${c.expiration_date}</p>
+            <button onclick="renewSubscription(${c.id})">Renew</button>
+          </div>
+        `).join('');
       }
-    
-      // Load Reminders
+      
       async function loadTodaysReminders() {
         const response = await fetch('http://localhost:3000/api/customers/today-reminders');
         const reminders = await response.json();
@@ -101,7 +66,7 @@
           <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
         `).join('');
       }
-    
+      
       async function loadUpcomingReminders() {
         const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
         const reminders = await response.json();
@@ -109,7 +74,7 @@
           <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
         `).join('');
       }
-    
+      
       async function loadPreviousReminders() {
         const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
         const reminders = await response.json();
@@ -117,13 +82,87 @@
           <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
         `).join('');
       }
-    
-      // Load reminders on page load
-      loadTodaysReminders();
-      loadUpcomingReminders();
-      loadPreviousReminders();
-    });
-    </script>
+      
+      // Renew function (globally accessible)
+      async function renewSubscription(customerId) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/customers/renew/${customerId}`, {
+            method: 'PUT',
+          });
+          if (response.ok) {
+            alert('Subscription renewed!');
+            loadInactiveUsers();
+            loadTodaysReminders();
+            loadUpcomingReminders();
+            loadPreviousReminders();
+          } else {
+            alert('Error: ' + await response.text());
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        // Add Customer Form
+        document.getElementById('customerForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+          const response = await fetch('http://localhost:3000/api/customers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          if (response.ok) {
+            alert('Customer added!');
+            e.target.reset();
+          } else {
+            alert('Error: ' + await response.text());
+          }
+        });
+      
+        // Search Form
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          performSearch();
+        });
+      
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') performSearch();
+        });
+      
+        // Search Function (defined here as it's only used within the listener)
+        async function performSearch() {
+          const searchTerm = document.getElementById('searchInput').value.trim();
+          if (!searchTerm) return;
+      
+          try {
+            const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
+            const customers = await response.json();
+      
+            const container = document.getElementById('searchResults');
+            container.innerHTML = customers.map(c => `
+              <div class="customer">
+                <h3>${c.name}</h3>
+                <p>Phone: ${c.mobile_number}</p>
+                <p>Start Date: ${c.start_date}</p>
+                <p>End Date: ${c.expiration_date}</p>
+              </div>
+            `).join('');
+          } catch (error) {
+            console.error('Error:', error);
+          }
+        }
+      
+        // Load data on page load
+        loadInactiveUsers();
+        loadTodaysReminders();
+        loadUpcomingReminders();
+        loadPreviousReminders();
+      });
+      </script>
+  
   <style>
       #searchBar {
     margin: 20px 0;
