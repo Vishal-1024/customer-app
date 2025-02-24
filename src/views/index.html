@@ -26,81 +26,123 @@
     <button type="submit">Add Customer</button>
   </form>
 
-  <h2>Customers</h2>
-  <div id="customers"></div>
+  <div id="searchBar">
+    <form id="searchForm">
+      <input type="text" id="searchInput" placeholder="Search by name or phone...">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+
+  <div id="searchResults"></div>
 
   <div id="previousReminders">
     <h2>Previous Reminders</h2>
     <div id="previousList"></div>
   </div>
-
+  
   <script>
-    // Add Customer
-    document.getElementById('customerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData);
-      const response = await fetch('http://localhost:3000/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add Customer Form
+      document.getElementById('customerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        const response = await fetch('http://localhost:3000/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (response.ok) {
+          alert('Customer added!');
+          e.target.reset();
+        } else {
+          alert('Error: ' + await response.text());
+        }
       });
-      if (response.ok) {
-        alert('Customer added!');
-        e.target.reset();
-        loadCustomers();
-      } else {
-        alert('Error: ' + await response.text());
+    
+      // Search Form
+      document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        performSearch();
+      });
+    
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
+      });
+    
+      // Search Function
+      async function performSearch() {
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        if (!searchTerm) return;
+    
+        try {
+          const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
+          const customers = await response.json();
+    
+          const container = document.getElementById('searchResults');
+          container.innerHTML = customers.map(c => `
+            <div class="customer">
+              <h3>${c.name}</h3>
+              <p>Phone: ${c.mobile_number}</p>
+              <p>Start Date: ${c.start_date}</p>
+              <p>End Date: ${c.expiration_date}</p>
+            </div>
+          `).join('');
+        } catch (error) {
+          console.error('Error:', error);
+        }
       }
+    
+      // Load Reminders
+      async function loadTodaysReminders() {
+        const response = await fetch('http://localhost:3000/api/customers/today-reminders');
+        const reminders = await response.json();
+        document.getElementById('todaysList').innerHTML = reminders.map(r => `
+          <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+        `).join('');
+      }
+    
+      async function loadUpcomingReminders() {
+        const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
+        const reminders = await response.json();
+        document.getElementById('upcomingList').innerHTML = reminders.map(r => `
+          <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+        `).join('');
+      }
+    
+      async function loadPreviousReminders() {
+        const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
+        const reminders = await response.json();
+        document.getElementById('previousList').innerHTML = reminders.map(r => `
+          <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
+        `).join('');
+      }
+    
+      // Load reminders on page load
+      loadTodaysReminders();
+      loadUpcomingReminders();
+      loadPreviousReminders();
     });
+    </script>
+  <style>
+      #searchBar {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+  }
+  #searchInput {
+    padding: 8px;
+    width: 300px;
+  }
+  #searchForm button {
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 
-    // Load Customers
-    async function loadCustomers() {
-  const response = await fetch('http://localhost:3000/api/customers');
-  const customers = await response.json();
-  const sortedCustomers = customers.sort((a, b) => a.name.localeCompare(b.name));
-  const container = document.getElementById('customers');
-  container.innerHTML = sortedCustomers.map(c => `
-    <p>${c.name} - ${c.product} (Start: ${c.start_date}, End: ${c.expiration_date})<br>
-    Address: ${c.address}<br>
-    Mobile: ${c.mobile_number}</p>
-  `).join('');
-}
-
-async function loadTodaysReminders() {
-  const response = await fetch('http://localhost:3000/api/customers/today-reminders');
-  const reminders = await response.json();
-  const container = document.getElementById('todaysList');
-  container.innerHTML = reminders.map(r => `
-    <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
-  `).join('');
-}
-
-async function loadUpcomingReminders() {
-  const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
-  const reminders = await response.json();
-  const container = document.getElementById('upcomingList');
-  container.innerHTML = reminders.map(r => `
-    <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
-  `).join('');
-}
-
-async function loadPreviousReminders() {
-  const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
-  const reminders = await response.json();
-  const container = document.getElementById('previousList');
-  container.innerHTML = reminders.map(r => `
-    <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
-  `).join('');
-}
-
-
-
-    // Load customers on page load
-    loadCustomers();
-    loadTodaysReminders();
-    loadUpcomingReminders();
-    loadPreviousReminders();
-  </script>
+  </style>
 </body>
 </html>
