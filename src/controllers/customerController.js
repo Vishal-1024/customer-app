@@ -148,3 +148,23 @@ exports.processDailyReminders = async () => {
     console.error('Error processing reminders:', error);
   }
 };
+
+exports.searchCustomers = async (req, res) => {
+  try {
+    const searchTerm = req.query.search;
+    const customers = await db.query(`
+      SELECT 
+        name, 
+        DATE_FORMAT(start_date, '%d/%m/%Y') AS start_date, 
+        DATE_FORMAT(expiration_date, '%d/%m/%Y') AS expiration_date, 
+        product, 
+        address, 
+        mobile_number 
+      FROM customers
+      WHERE name LIKE ? OR mobile_number = ?
+    `, [`%${searchTerm}%`, searchTerm]);
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
