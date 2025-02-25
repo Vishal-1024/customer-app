@@ -1,5 +1,32 @@
 const db = require('../models/db');
 
+// Global function to generate reminders
+function generateReminders(start_date) {
+  const startDate = new Date(start_date);
+  const expirationDate = new Date(startDate);
+  expirationDate.setMonth(startDate.getMonth() + 12); // 12 months from start
+  const reminders = [];
+
+  // Service reminders at 0, 4, and 8 months
+  const serviceMonths = [0, 4, 8];
+  serviceMonths.forEach(months => {
+    const date = new Date(startDate);
+    date.setMonth(date.getMonth() + months);
+    reminders.push({
+      type: 'servicing',
+      reminder_date: date.toISOString().split('T')[0]
+    });
+  });
+
+  // Expiration reminder at 12 months
+  reminders.push({
+    type: 'expiration',
+    reminder_date: expirationDate.toISOString().split('T')[0]
+  });
+
+  return reminders;
+}
+
 exports.createCustomer = async (req, res) => {
   try {
     // Validate inputs
@@ -22,7 +49,7 @@ exports.createCustomer = async (req, res) => {
       [
         req.body.name,
         req.body.start_date,
-        formattedExpirationDate,  // Auto-calculated
+        formattedExpirationDate,
         req.body.product,
         req.body.address,
         req.body.mobile_number
@@ -31,32 +58,9 @@ exports.createCustomer = async (req, res) => {
     const customerId = result.insertId;
 
     // Generate reminders
-    const generateReminders = (customerId, start_date, expiration_date) => {
-      const startDate = new Date(start_date);
-      const expirationDate = new Date(expiration_date);
-      let currentDate = new Date(startDate);
-      const reminders = [];
-
-      // Servicing reminders every 3 months
-      while (currentDate < expirationDate) {
-        reminders.push({
-          type: 'servicing',
-          reminder_date: currentDate.toISOString().split('T')[0]
-        });
-        currentDate.setMonth(currentDate.getMonth() + 3);
-      }
-
-      // Renewal reminder at expiration date
-      reminders.push({
-        type: 'expiration',
-        reminder_date: expirationDate.toISOString().split('T')[0]
-      });
-
-      return reminders;
-    };
+    const reminders = generateReminders(req.body.start_date);
 
     // Insert reminders
-    const reminders = generateReminders(customerId, req.body.start_date, formattedExpirationDate);
     for (const reminder of reminders) {
       await db.query(
         'INSERT INTO reminders (customer_id, type, reminder_date) VALUES (?, ?, ?)',
@@ -69,6 +73,7 @@ exports.createCustomer = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 exports.getAllCustomers = async (req, res) => {
   try {
     const customers = await db.query(`
@@ -81,7 +86,7 @@ exports.getAllCustomers = async (req, res) => {
         mobile_number 
       FROM customers
     `);
-    res.json(customers); // Dates are now formatted strings
+    res.json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -124,7 +129,16 @@ exports.getUpcomingReminders = async (req, res) => {
 
 exports.getPreviousReminders = async (req, res) => {
   try {
-    const reminders = await db.query('SELECT * FROM previous_reminders ORDER BY processed_date DESC');
+    const reminders = await db.query(`
+      SELECT 
+        r.type, 
+        c.name, 
+        DATE_FORMAT(r.reminder_date, '%d/%m/%Y') AS reminder_date,
+        r.processed_date
+      FROM previous_reminders r
+      JOIN customers c ON r.customer_id = c.id
+      ORDER BY r.processed_date DESC
+    `);
     res.json(reminders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -142,7 +156,7 @@ exports.processDailyReminders = async () => {
     // Insert into previous_reminders
     for (const reminder of todayReminders) {
       await db.query(
-        'INSERT INTO previous_reminders (customer_id, type, reminder_date) VALUES (?, ?, ?)',
+        'INSERT INTO previous_reminders (customer_id, type, reminder_date, processed_date) VALUES (?, ?, ?, NOW())',
         [reminder.customer_id, reminder.type, reminder.reminder_date]
       );
     }
@@ -199,36 +213,11 @@ exports.renewSubscription = async (req, res) => {
     // Delete old reminders
     await db.query('DELETE FROM reminders WHERE customer_id = ?', [customerId]);
 
-    // Generate new reminders
-    function generateReminders(start_date) {
-      const startDate = new Date(start_date);
-      const expirationDate = new Date(startDate);
-      expirationDate.setMonth(startDate.getMonth() + 12); // 12 months from start
-      const reminders = [];
-    
-      // Service reminders at 0, 4, and 8 months
-      const serviceMonths = [0, 4, 8];
-      serviceMonths.forEach(months => {
-        const date = new Date(startDate);
-        date.setMonth(date.getMonth() + months);
-        reminders.push({
-          type: 'servicing',
-          reminder_date: date.toISOString().split('T')[0]
-        });
-      });
-    
-      // Expiration reminder at 12 months
-      reminders.push({
-        type: 'expiration',
-        reminder_date: expirationDate.toISOString().split('T')[0]
-      });
-    
-      return reminders;
-    }
+    // Generate new reminders using today's date
+    const newStartDate = new Date().toISOString().split('T')[0];
+    const reminders = generateReminders(newStartDate);
 
     // Insert new reminders
-    const newStartDate = new Date(); // Today
-    const reminders = generateReminders(customerId, newStartDate.toISOString().split('T')[0]);
     for (const reminder of reminders) {
       await db.query(
         'INSERT INTO reminders (customer_id, type, reminder_date) VALUES (?, ?, ?)',
@@ -248,4 +237,3 @@ exports.renewSubscription = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
