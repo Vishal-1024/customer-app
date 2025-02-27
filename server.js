@@ -1,7 +1,11 @@
+const customerController = require('./src/controllers/customerController');
 const express = require('express');
 const app = express();
 const cron = require('node-cron');
 require('dotenv').config();
+
+const cors = require('cors');
+app.use(cors());
 
 app.use(express.json());
 app.use(express.static('src/views'));

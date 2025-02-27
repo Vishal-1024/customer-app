@@ -1,190 +1,380 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Customer App</title>
-</head>
+  <head>
+    <title>Customer App</title>
+
+    <style>
+      /* Reset default margins and padding */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f6f9;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      /* Navbar */
+      .navbar {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        background: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .navbar h1 {
+        font-size: 24px;
+        color: #4a4a4a;
+      }
+
+      .navbar button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+      }
+
+      .navbar button:hover {
+        background: #0056b3;
+      }
+
+      /* Backdrop for modal */
+      .backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 999;
+        display: none;
+      }
+
+      /* Main Content */
+      .container {
+        max-width: 1200px;
+        margin: 80px auto 20px;
+        padding: 0 20px;
+      }
+
+      .section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .section h2 {
+        margin-bottom: 15px;
+        color: #4a4a4a;
+      }
+
+      /* Updated modal styles */
+      .modal {
+        width: 80%;
+        max-width: 600px;
+        padding: 30px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        display: none;
+      }
+
+      .modal .close-button {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .modal form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .modal input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .modal button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      /* Customer List */
+      .customer {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+
+      .customer h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .customer p {
+        margin: 5px 0;
+        color: #666;
+      }
+
+      /* Buttons */
+      button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      /* Search Bar */
+      #searchBar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 20px 0;
+      }
+
+      #searchInput {
+        padding: 10px;
+        width: 300px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
 <body>
+  <!-- Backdrop for modal -->
+  <div class="backdrop"></div>
 
-    <div id="todaysReminders">
-        <h1>Today's Reminders</h1>
-        <div id="todaysList"></div>
-      </div>
-      
-      <div id="upcomingReminders">
-        <h1>Upcoming Reminders</h1>
-        <div id="upcomingList"></div>
-      </div>
+  <div class="navbar">
+    <h1>Customer App</h1>
+    <button onclick="openModal()">Add Customer</button>
+  </div>
 
-  <h2>Add Customer</h2>
-  <form id="customerForm">
-    <input type="text" name="name" placeholder="Name" required><br>
-    <input type="date" name="start_date" required><br>
-    <input type="text" name="product" placeholder="Product"><br>
-    <input type="text" name="address" placeholder="Address" required><br>
-    <input type="text" name="mobile_number" placeholder="Mobile Number" required><br>
-    <button type="submit">Add Customer</button>
-  </form>
+  <div class="container">
+    <div class="section" id="todaysReminders">
+      <h2>Today's Reminders</h2>
+      <div id="todaysList"></div>
+    </div>
 
-  <div id="searchBar">
-    <form id="searchForm">
-      <input type="text" id="searchInput" placeholder="Search by name or phone...">
-      <button type="submit">Search</button>
+    <div class="section" id="upcomingReminders">
+      <h2>Upcoming Reminders</h2>
+      <div id="upcomingList"></div>
+    </div>
+
+    <div class="section" id="inactiveUsers">
+      <h2>Inactive Users</h2>
+      <div id="inactiveList"></div>
+    </div>
+
+    <div class="section" id="previousReminders">
+      <h2>Previous Reminders</h2>
+      <div id="previousList"></div>
+    </div>
+
+    <div class="section" id="searchBar">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by name or phone...">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <div id="searchResults"></div>
+  </div>
+
+  <!-- Updated modal with close button -->
+  <div id="addCustomerModal" class="modal">
+    <button class="close-button" onclick="closeModal()">X</button>
+    <form id="customerForm">
+      <input type="text" name="name" placeholder="Name" required>
+      <input type="date" name="start_date" required>
+      <input type="text" name="product" placeholder="Product">
+      <input type="text" name="address" placeholder="Address" required>
+      <input type="text" name="mobile_number" placeholder="Mobile Number" required>
+      <button type="submit">Add Customer</button>
     </form>
   </div>
 
-  <div id="searchResults"></div>
+  <script>
+    // Open modal
+    function openModal() {
+      document.getElementById('addCustomerModal').style.display = 'block';
+      document.querySelector('.backdrop').style.display = 'block';
+      
+      // Add click event to backdrop when modal is open
+      document.querySelector('.backdrop').addEventListener('click', closeModal);
+    }
 
-  <div id="inactiveUsers">
-    <h2>Inactive Users</h2>
-    <div id="inactiveList"></div>
-  </div>
+    // Close modal
+    function closeModal() {
+      document.getElementById('addCustomerModal').style.display = 'none';
+      document.querySelector('.backdrop').style.display = 'none';
+      
+      // Remove click event from backdrop when modal is closed
+      document.querySelector('.backdrop').removeEventListener('click', closeModal);
+    }
 
-  <div id="previousReminders">
-    <h2>Previous Reminders</h2>
-    <div id="previousList"></div>
-  </div>
-  
-    <script>
-      // Define all load functions globally (outside the listener)
-      async function loadInactiveUsers() {
-        const response = await fetch('http://localhost:3000/api/customers/inactive');
+    // Add Customer Form
+    document.getElementById('customerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData);
+      try {
+        const response = await fetch('http://localhost:3000/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (response.ok) {
+          alert('Customer added!');
+          closeModal();
+          loadTodaysReminders();
+          loadUpcomingReminders();
+          loadInactiveUsers();
+          loadPreviousReminders();
+        } else {
+          alert('Error: ' + await response.text());
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    });
+
+    // Load functions
+    async function loadInactiveUsers() {
+      const response = await fetch('http://localhost:3000/api/customers/inactive');
+      const customers = await response.json();
+      document.getElementById('inactiveList').innerHTML = customers.map(c => `
+        <div class="customer">
+          <h3>${c.name}</h3>
+          <p>End Date: ${c.expiration_date}</p>
+          <button onclick="renewSubscription(${c.id})">Renew</button>
+        </div>
+      `).join('');
+    }
+
+    async function loadTodaysReminders() {
+      const response = await fetch('http://localhost:3000/api/customers/today-reminders');
+      const reminders = await response.json();
+      document.getElementById('todaysList').innerHTML = reminders.map(r => `
+        <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+      `).join('');
+    }
+
+    async function loadUpcomingReminders() {
+      const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
+      const reminders = await response.json();
+      document.getElementById('upcomingList').innerHTML = reminders.map(r => `
+        <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+      `).join('');
+    }
+
+    async function loadPreviousReminders() {
+      const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
+      const reminders = await response.json();
+      document.getElementById('previousList').innerHTML = reminders.map(r => `
+        <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
+      `).join('');
+    }
+
+    async function renewSubscription(customerId) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/customers/renew/${customerId}`, { method: 'PUT' });
+        if (response.ok) {
+          alert('Subscription renewed!');
+          loadInactiveUsers();
+          loadTodaysReminders();
+          loadUpcomingReminders();
+          loadPreviousReminders();
+        } else {
+          alert('Error: ' + await response.text());
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    async function performSearch() {
+      const searchTerm = document.getElementById('searchInput').value.trim();
+      if (!searchTerm) return;
+      try {
+        const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
         const customers = await response.json();
-        const container = document.getElementById('inactiveList');
-        container.innerHTML = customers.map(c => `
+        document.getElementById('searchResults').innerHTML = customers.map(c => `
           <div class="customer">
             <h3>${c.name}</h3>
+            <p>Phone: ${c.mobile_number}</p>
+            <p>Start Date: ${c.start_date}</p>
             <p>End Date: ${c.expiration_date}</p>
-            <button onclick="renewSubscription(${c.id})">Renew</button>
           </div>
         `).join('');
+      } catch (error) {
+        console.error('Error:', error);
       }
-      
-      async function loadTodaysReminders() {
-        const response = await fetch('http://localhost:3000/api/customers/today-reminders');
-        const reminders = await response.json();
-        document.getElementById('todaysList').innerHTML = reminders.map(r => `
-          <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
-        `).join('');
-      }
-      
-      async function loadUpcomingReminders() {
-        const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
-        const reminders = await response.json();
-        document.getElementById('upcomingList').innerHTML = reminders.map(r => `
-          <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
-        `).join('');
-      }
-      
-      async function loadPreviousReminders() {
-        const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
-        const reminders = await response.json();
-        document.getElementById('previousList').innerHTML = reminders.map(r => `
-          <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
-        `).join('');
-      }
-      
-      // Renew function (globally accessible)
-      async function renewSubscription(customerId) {
-        try {
-          const response = await fetch(`http://localhost:3000/api/customers/renew/${customerId}`, {
-            method: 'PUT',
-          });
-          if (response.ok) {
-            alert('Subscription renewed!');
-            loadInactiveUsers();
-            loadTodaysReminders();
-            loadUpcomingReminders();
-            loadPreviousReminders();
-          } else {
-            alert('Error: ' + await response.text());
-          }
-        } catch (error) {
-          console.error('Error:', error);
-        }
-      }
-      
-      document.addEventListener('DOMContentLoaded', () => {
-        // Add Customer Form
-        document.getElementById('customerForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target);
-          const data = Object.fromEntries(formData);
-          const response = await fetch('http://localhost:3000/api/customers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
-          if (response.ok) {
-            alert('Customer added!');
-            e.target.reset();
-          } else {
-            alert('Error: ' + await response.text());
-          }
-        });
-      
-        // Search Form
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          performSearch();
-        });
-      
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') performSearch();
-        });
-      
-        // Search Function (defined here as it's only used within the listener)
-        async function performSearch() {
-          const searchTerm = document.getElementById('searchInput').value.trim();
-          if (!searchTerm) return;
-      
-          try {
-            const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
-            const customers = await response.json();
-      
-            const container = document.getElementById('searchResults');
-            container.innerHTML = customers.map(c => `
-              <div class="customer">
-                <h3>${c.name}</h3>
-                <p>Phone: ${c.mobile_number}</p>
-                <p>Start Date: ${c.start_date}</p>
-                <p>End Date: ${c.expiration_date}</p>
-              </div>
-            `).join('');
-          } catch (error) {
-            console.error('Error:', error);
-          }
-        }
-      
-        // Load data on page load
-        loadInactiveUsers();
-        loadTodaysReminders();
-        loadUpcomingReminders();
-        loadPreviousReminders();
-      });
-      </script>
-  
-  <style>
-      #searchBar {
-    margin: 20px 0;
-    display: flex;
-    gap: 10px;
-  }
-  #searchInput {
-    padding: 8px;
-    width: 300px;
-  }
-  #searchForm button {
-    padding: 8px 16px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+    }
 
-  </style>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('searchForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        performSearch();
+      });
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
+      });
+      loadInactiveUsers();
+      loadTodaysReminders();
+      loadUpcomingReminders();
+      loadPreviousReminders();
+    });
+  </script>
+  
 </body>
 </html>
-
-
-// Its a brand new day for a new kind of fuckUp
