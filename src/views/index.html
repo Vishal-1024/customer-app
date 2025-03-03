@@ -37,7 +37,8 @@
         color: #4a4a4a;
       }
 
-      .navbar button {
+      /* Global Button Style */
+      button {
         padding: 10px 20px;
         background: #007bff;
         color: white;
@@ -48,7 +49,7 @@
         transition: background 0.3s ease;
       }
 
-      .navbar button:hover {
+      button:hover {
         background: #0056b3;
       }
 
@@ -101,17 +102,29 @@
         display: none;
       }
 
-      .modal .close-button {
-        position: absolute;
-        top: 15px;
-        right: 15px;
+    /* Improved close button */
+    .modal .close-button {
+    position: absolute;
+    top: 6px;
+    right: 30px;
+    background: #f8f9fa;
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    border-radius: 8px; /* Changed from 50% to 8px for rounded corners */
+    width: 5px; /* Increased width for rectangular shape */
+    height: 5px; /* Kept the same height */
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+      .modal .close-button:hover {
         background: #dc3545;
         color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 5px 10px;
-        font-size: 14px;
-        cursor: pointer;
       }
 
       .modal form {
@@ -120,19 +133,36 @@
         gap: 15px;
       }
 
+      /* Improved form fields */
       .modal input {
-        padding: 8px;
-        border: 1px solid #ddd;
+        padding: 12px;
+        border: 1px solid #ced4da;
         border-radius: 4px;
+        font-size: 16px;
+        width: 100%;
       }
 
-      .modal button {
-        padding: 10px 20px;
+      .modal input:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+
+      /* Form submit button */
+      .modal .submit-button {
+        padding: 12px;
+        width: 100%;
+        font-size: 16px;
         background: #007bff;
         color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .modal .submit-button:hover {
+        background: #0056b3;
       }
 
       /* Customer List */
@@ -171,6 +201,11 @@
         border: 1px solid #ddd;
         border-radius: 4px;
         font-size: 16px;
+      }
+
+      /* Capitalize first letter of reminder types */
+      .reminder-type {
+        text-transform: capitalize;
       }
     </style>
   </head>
@@ -216,20 +251,20 @@
 
   <!-- Add Customer Modal -->
   <div id="addCustomerModal" class="modal">
-    <button class="close-button" onclick="closeModal()">X</button>
+    <button class="close-button" onclick="closeModal()">×</button>
     <form id="customerForm">
       <input type="text" name="name" placeholder="Name" required>
       <input type="date" name="start_date" required>
       <input type="text" name="product" placeholder="Product">
       <input type="text" name="address" placeholder="Address" required>
       <input type="text" name="mobile_number" placeholder="Mobile Number" required>
-      <button type="submit">Add Customer</button>
+      <button type="submit" class="submit-button">Add Customer</button>
     </form>
   </div>
 
   <!-- Search Results Modal -->
   <div id="searchResultsModal" class="modal">
-    <button class="close-button" onclick="closeSearchResultsModal()">X</button>
+    <button class="close-button" onclick="closeSearchResultsModal()">×</button>
     <div id="searchResultsContent"></div>
   </div>
 
@@ -274,6 +309,11 @@
       }
     });
 
+    // Format reminder type with first letter capitalized
+    function formatReminderType(type) {
+      return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+
     // Load functions
     async function loadInactiveUsers() {
       const response = await fetch('http://localhost:3000/api/customers/inactive');
@@ -291,7 +331,7 @@
       const response = await fetch('http://localhost:3000/api/customers/today-reminders');
       const reminders = await response.json();
       document.getElementById('todaysList').innerHTML = reminders.map(r => `
-        <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+        <p><span class="reminder-type">${formatReminderType(r.type)}</span> for ${r.name} on ${r.reminder_date}</p>
       `).join('');
     }
 
@@ -299,7 +339,7 @@
       const response = await fetch('http://localhost:3000/api/customers/upcoming-reminders');
       const reminders = await response.json();
       document.getElementById('upcomingList').innerHTML = reminders.map(r => `
-        <p>${r.type} for ${r.name} on ${r.reminder_date}</p>
+        <p><span class="reminder-type">${formatReminderType(r.type)}</span> for ${r.name} on ${r.reminder_date}</p>
       `).join('');
     }
 
@@ -307,7 +347,7 @@
       const response = await fetch('http://localhost:3000/api/customers/previous-reminders');
       const reminders = await response.json();
       document.getElementById('previousList').innerHTML = reminders.map(r => `
-        <p>${r.type} for Customer ID ${r.customer_id} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
+        <p><span class="reminder-type">${formatReminderType(r.type)}</span> for ${r.name} on ${r.reminder_date} (Processed: ${r.processed_date})</p>
       `).join('');
     }
 
