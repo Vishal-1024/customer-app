@@ -85,7 +85,7 @@
         color: #4a4a4a;
       }
 
-      /* Updated modal styles */
+      /* Modal styles */
       .modal {
         width: 80%;
         max-width: 600px;
@@ -157,22 +157,6 @@
         color: #666;
       }
 
-      /* Buttons */
-      button {
-        padding: 10px 20px;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background 0.3s ease;
-      }
-
-      button:hover {
-        background: #0056b3;
-      }
-
       /* Search Bar */
       #searchBar {
         display: flex;
@@ -191,7 +175,7 @@
     </style>
   </head>
 <body>
-  <!-- Backdrop for modal -->
+  <!-- Backdrop for modals -->
   <div class="backdrop"></div>
 
   <div class="navbar">
@@ -200,6 +184,15 @@
   </div>
 
   <div class="container">
+    <!-- Search bar section -->
+    <div class="section" id="searchBar">
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by name or phone...">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <!-- Other sections -->
     <div class="section" id="todaysReminders">
       <h2>Today's Reminders</h2>
       <div id="todaysList"></div>
@@ -219,18 +212,9 @@
       <h2>Previous Reminders</h2>
       <div id="previousList"></div>
     </div>
-
-    <div class="section" id="searchBar">
-      <form id="searchForm">
-        <input type="text" id="searchInput" placeholder="Search by name or phone...">
-        <button type="submit">Search</button>
-      </form>
-    </div>
-
-    <div id="searchResults"></div>
   </div>
 
-  <!-- Updated modal with close button -->
+  <!-- Add Customer Modal -->
   <div id="addCustomerModal" class="modal">
     <button class="close-button" onclick="closeModal()">X</button>
     <form id="customerForm">
@@ -243,13 +227,17 @@
     </form>
   </div>
 
+  <!-- Search Results Modal -->
+  <div id="searchResultsModal" class="modal">
+    <button class="close-button" onclick="closeSearchResultsModal()">X</button>
+    <div id="searchResultsContent"></div>
+  </div>
+
   <script>
     // Open modal
     function openModal() {
       document.getElementById('addCustomerModal').style.display = 'block';
       document.querySelector('.backdrop').style.display = 'block';
-      
-      // Add click event to backdrop when modal is open
       document.querySelector('.backdrop').addEventListener('click', closeModal);
     }
 
@@ -257,8 +245,6 @@
     function closeModal() {
       document.getElementById('addCustomerModal').style.display = 'none';
       document.querySelector('.backdrop').style.display = 'none';
-      
-      // Remove click event from backdrop when modal is closed
       document.querySelector('.backdrop').removeEventListener('click', closeModal);
     }
 
@@ -342,13 +328,26 @@
       }
     }
 
+    // Search results modal functions
+    function openSearchResultsModal() {
+      document.getElementById('searchResultsModal').style.display = 'block';
+      document.querySelector('.backdrop').style.display = 'block';
+      document.querySelector('.backdrop').addEventListener('click', closeSearchResultsModal);
+    }
+
+    function closeSearchResultsModal() {
+      document.getElementById('searchResultsModal').style.display = 'none';
+      document.querySelector('.backdrop').style.display = 'none';
+      document.querySelector('.backdrop').removeEventListener('click', closeSearchResultsModal);
+    }
+
     async function performSearch() {
       const searchTerm = document.getElementById('searchInput').value.trim();
       if (!searchTerm) return;
       try {
         const response = await fetch(`http://localhost:3000/api/customers/search?search=${encodeURIComponent(searchTerm)}`);
         const customers = await response.json();
-        document.getElementById('searchResults').innerHTML = customers.map(c => `
+        document.getElementById('searchResultsContent').innerHTML = customers.map(c => `
           <div class="customer">
             <h3>${c.name}</h3>
             <p>Phone: ${c.mobile_number}</p>
@@ -356,6 +355,7 @@
             <p>End Date: ${c.expiration_date}</p>
           </div>
         `).join('');
+        openSearchResultsModal();
       } catch (error) {
         console.error('Error:', error);
       }
